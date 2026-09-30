@@ -1,312 +1,410 @@
-WORK IN PROGRESS, final version coming before submission.
-# astra-intel
-AI-powered defence document intelligence system for PDF summarization, grounded question answering, and page-level source citations using RAG.
-# ASTRA INTEL
+# 🛡️ ASTRA INTEL
 
-### AI-Powered Defence Document Intelligence System
+### Document Intelligence • Hybrid Retrieval • Grounded Q&A
 
-ASTRA INTEL is an AI-powered document intelligence system that allows users to upload defence-related PDF documents, generate concise summaries, and ask questions about their contents.
+ASTRA INTEL is a document intelligence application that allows users to upload a PDF, process its contents, and ask questions about the document.
 
-The system uses a **Retrieval-Augmented Generation (RAG)** pipeline to retrieve relevant sections from the uploaded document before generating an answer. This helps keep responses grounded in the provided document rather than relying solely on the language model's general knowledge.
+Instead of allowing the language model to answer purely from general knowledge, ASTRA INTEL first retrieves relevant passages from the uploaded document and provides them to the language model as context.
 
-> Built as part of the **ASTRA Software Team 3-Day Build Challenge 2026–27** at BMS Institute of Technology & Management.
+The goal is to generate answers that are grounded in the uploaded document and accompanied by relevant source pages.
 
 ---
 
 ## 🚀 Features
 
-### Core Features
-
-* 📄 Upload PDF documents
-* 🔍 Extract text while preserving page information
-* ✂️ Split documents into searchable chunks
-* 🧠 Generate embeddings for document chunks
-* 🗂️ Store and search embeddings using a vector database
-* 💬 Ask questions about the uploaded document
-* 📝 Generate concise document summaries
-* 📑 Display source pages for generated answers
-* 🛡️ Ground answers in the uploaded document
-* ⚠️ Clearly indicate when the document does not contain enough information
-* 💬 Support multi-turn document conversations
-* ❌ Handle invalid files and processing errors
+- 📄 PDF document upload
+- 🔍 Automatic PDF text extraction
+- ✂️ Text chunking with overlapping chunks
+- 🧠 Semantic embeddings
+- 🔎 Hybrid retrieval using:
+  - Semantic similarity
+  - Keyword matching
+- 🤖 Gemini-powered question answering
+- 📌 Page-level source references
+- 💬 Multi-turn conversation history
+- ✨ Document summarization
+- 🔬 Retrieved evidence inspection
+- ⚠️ Basic error handling
+- 🎨 Interactive web interface
+- 🔐 API key handled through environment variables/secrets
 
 ---
 
-## 🧠 How It Works
+# 🎯 Problem Statement
 
-ASTRA INTEL follows a Retrieval-Augmented Generation pipeline:
+Large documents can contain hundreds of pages, making it difficult to quickly locate specific information.
+
+Traditional document reading requires users to manually search through pages and understand the surrounding context.
+
+ASTRA INTEL addresses this problem by allowing users to ask natural-language questions about an uploaded document.
+
+The system:
+
+1. Processes the uploaded document.
+2. Breaks the document into searchable chunks.
+3. Creates semantic representations of those chunks.
+4. Retrieves relevant passages for a question.
+5. Sends the retrieved passages to Gemini.
+6. Generates an answer using the retrieved document context.
+7. Displays the relevant source pages and evidence.
+
+---
+
+# 🧠 How ASTRA INTEL Works
+
+ASTRA INTEL follows a Retrieval-Augmented Generation (RAG) approach.
 
 ```text
-                 PDF Upload
-                     │
-                     ▼
-              Text Extraction
-                     │
-                     ▼
-             Text Chunking
-                     │
-                     ▼
-               Embeddings
-                     │
-                     ▼
-              Vector Store
-                     │
-              ┌──────┴──────┐
-              │             │
-          User Query     Summary
-              │
-              ▼
-       Similarity Retrieval
-              │
-              ▼
-       Relevant Document
-            Context
-              │
-              ▼
-             LLM
-              │
-              ▼
-      Grounded Response
-              │
-              ▼
-       Source / Page Citations
-```
+                    ┌─────────────────┐
+                    │   PDF Upload    │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │ PyMuPDF Text    │
+                    │ Extraction      │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │ Text Chunking   │
+                    │ 250 words       │
+                    │ 60 word overlap │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │ Gemini          │
+                    │ Embeddings      │
+                    └────────┬────────┘
+                             │
+                             ▼
+             ┌──────────────────────────────┐
+             │      Hybrid Retrieval       │
+             │                              │
+             │  Semantic Similarity  60%    │
+             │  Keyword Matching     40%    │
+             └──────────────┬───────────────┘
+                            │
+                            ▼
+                   ┌─────────────────┐
+                   │ Relevant Chunks │
+                   └────────┬────────┘
+                            │
+                            ▼
+                   ┌─────────────────┐
+                   │ Gemini LLM      │
+                   │ Grounded Answer │
+                   └────────┬────────┘
+                            │
+                            ▼
+                   ┌─────────────────┐
+                   │ Answer + Pages  │
+                   └─────────────────┘
 
----
 
-## 🏗️ Architecture
+                   🔎 Retrieval System
 
-The application is divided into the following components:
+ASTRA INTEL does not rely solely on semantic similarity.
 
-### 1. Document Processing
+For every document chunk, two relevance signals are calculated.
 
-The uploaded PDF is processed page by page. Text is extracted while maintaining page numbers so that retrieved information can later be traced back to its original location.
+1. Semantic Similarity
 
-### 2. Text Chunking
+The user's question is converted into an embedding using:
 
-The extracted document text is divided into smaller chunks. This allows the retrieval system to search for relevant portions of the document instead of processing the entire document for every question.
+gemini-embedding-001
 
-### 3. Embedding Generation
+Each document chunk also has an embedding.
 
-Each text chunk is converted into a numerical vector representation using an embedding model.
+Cosine similarity is then used to measure how semantically related the question and document chunk are.
 
-### 4. Vector Search
+2. Keyword Matching
 
-The embeddings are stored in a vector index. When the user asks a question, the system retrieves the chunks that are semantically most relevant to the query.
+The system also checks for overlap between meaningful words in the question and the document chunk.
 
-### 5. Retrieval-Augmented Generation
+This provides a lexical signal that can help retrieve passages containing important terms from the question.
 
-The retrieved chunks are provided to the language model as context.
+3. Combined Score
 
-The model is instructed to answer using the provided document context and avoid introducing information that cannot be supported by the document.
+The final retrieval score is:
 
-### 6. Source Attribution
+Combined Score =
+    0.60 × Semantic Score
+  + 0.40 × Keyword Score
 
-The system keeps the original page information associated with each chunk and displays relevant source pages alongside the generated answer.
+The highest-scoring relevant chunks are selected while limiting excessive retrieval from the same page.
 
----
+This hybrid approach combines semantic understanding with direct keyword overlap.
 
-## 🛠️ Tech Stack
+🤖 Grounded Question Answering
 
-| Component       | Technology        |
-| --------------- | ----------------- |
-| Frontend        | Streamlit         |
-| Language        | Python            |
-| PDF Processing  | PyMuPDF           |
-| Embeddings      | OpenAI Embeddings |
-| Vector Search   | FAISS             |
-| LLM             | OpenAI API        |
-| Retrieval       | RAG               |
-| Version Control | Git & GitHub      |
+Retrieved document passages are provided to Gemini as context.
 
----
+The answering instructions require the model to:
 
-## 📂 Project Structure
+Use only the supplied document excerpts
+Avoid relying on outside knowledge
+Avoid guessing
+Clearly state when the requested information is not available
+Provide supporting source pages for factual answers
 
-```text
+This helps reduce unsupported answers and makes the connection between the generated answer and the uploaded document more transparent.
+
+📌 Source Attribution
+
+ASTRA INTEL keeps track of the page associated with every retrieved chunk.
+
+After answering a question, the interface displays the retrieved source pages.
+
+Users can also expand the evidence section to inspect the passages that were retrieved for the question.
+
+This allows users to verify the context used by the system instead of blindly trusting the generated response.
+
+💬 Multi-Turn Conversation
+
+ASTRA INTEL maintains conversation history during the current document session.
+
+Previous questions and answers can be used as conversational context for subsequent questions.
+
+This allows users to ask follow-up questions instead of treating every question as a completely isolated interaction.
+
+✨ Document Summarization
+
+ASTRA INTEL can generate a concise summary of the uploaded document.
+
+The summarization process is instructed to use the uploaded document as its source rather than relying on unrelated outside information.
+
+🛠️ Tech Stack
+Technology	Purpose
+Python	Application logic
+Streamlit	Web application interface
+PyMuPDF	PDF text extraction
+NumPy	Vector operations and cosine similarity
+Google Gemini	Embeddings and language generation
+Gemini Embedding Model	Semantic document representations
+GitHub	Source code and version control
+GitHub Codespaces	Browser-based development
+📁 Project Structure
 astra-intel/
 │
 ├── app.py
-├── requirements.txt
+├── index.html
 ├── README.md
-├── .env.example
-├── .gitignore
-│
-├── src/
-│   ├── document_processor.py
-│   ├── embeddings.py
-│   ├── vector_store.py
-│   ├── retrieval.py
-│   ├── llm.py
-│   └── prompts.py
-│
-└── tests/
-    └── test_cases.md
-```
-
-> The exact structure may change as the implementation evolves.
-
----
-
-## ⚙️ Installation & Setup
-
-### 1. Clone the repository
-
-```bash
+└── requirements.txt
+⚙️ Installation & Setup
+1. Clone the repository
 git clone https://github.com/abhi-om16/astra-intel.git
 cd astra-intel
-```
-
-### 2. Create a virtual environment
-
-```bash
-python -m venv venv
-```
-
-Activate it:
-
-**Windows**
-
-```bash
-venv\Scripts\activate
-```
-
-**Linux / macOS**
-
-```bash
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
+2. Install dependencies
 pip install -r requirements.txt
-```
+3. Configure Gemini API Key
 
-### 4. Configure environment variables
+ASTRA INTEL requires a Gemini API key.
 
-Create a `.env` file based on `.env.example`.
+The application reads the key from the environment variable:
 
-```env
-OPENAI_API_KEY=your_api_key_here
-```
+GEMINI_API_KEY
 
-Never commit API keys, passwords, tokens, or other secrets to the repository.
+Do not hardcode the API key inside app.py.
 
-### 5. Run the application
+Do not commit API keys, passwords, tokens, or .env files containing secrets to GitHub.
 
-```bash
+4. Run the application
 streamlit run app.py
-```
 
-The application will then be available through the local Streamlit server.
+The application will then be available through the Streamlit local/forwarded port.
 
----
+🔐 Security
 
-## 🔐 Environment Variables
+The Gemini API key is accessed through:
 
-| Variable         | Description                                              |
-| ---------------- | -------------------------------------------------------- |
-| `OPENAI_API_KEY` | API key used for embeddings and/or language model access |
+os.environ["GEMINI_API_KEY"]
 
-See `.env.example` for the required configuration.
+The key is not stored directly inside the source code.
 
----
+For deployment environments, the API key should be configured using the platform's secret-management system.
 
-## 🧪 Testing
+🧪 Testing
 
-The system was tested against different types of inputs and queries, including:
+The application was tested using questions whose answers were explicitly present in the uploaded document, as well as questions designed to test the grounding behavior of the system.
 
-* Valid PDF documents
-* Empty or text-poor PDFs
-* Questions directly answered by the document
-* Questions requiring information from different pages
-* Questions unrelated to the document
-* Ambiguous questions
-* Repeated questions
-* Missing API key / configuration errors
-* Invalid file uploads
-
-### Grounding Test
-
-A key test is asking a question whose answer is **not present in the uploaded document**.
+Test Case 1 — Direct factual question
+What is an intrinsic semiconductor?
 
 Expected behavior:
 
-```text
-The provided document does not contain enough information
-to answer this question.
-```
+Retrieve the relevant section.
+Generate an answer using the document.
+Display the supporting page.
 
-This helps prevent the model from confidently generating unsupported information.
+Observed behavior:
 
----
+An intrinsic semiconductor is a pure semiconductor.
 
-## 🤖 AI Usage
+Source:
 
-AI-assisted development was used during the project for:
+Page 15
+Test Case 2 — Relationship question
+What is the relationship between electron and hole concentrations in an intrinsic semiconductor?
 
-* Understanding and exploring implementation approaches
-* Generating initial code structures
-* Debugging errors
-* Improving prompts
-* Exploring RAG implementation techniques
-* Reviewing and refining parts of the code
+Expected behavior:
 
-AI-generated code was **tested, modified, and validated** during development rather than being used without verification.
+Retrieve relevant document passages.
+Generate the answer from the retrieved context.
+Display supporting source pages.
+Test Case 3 — Conceptual question
+What is the valence band?
 
-The final implementation, architecture decisions, integration, testing, and debugging were reviewed as part of the development process.
+Expected behavior:
 
----
+Retrieve the relevant document passage.
+Generate an answer based on the document.
+Display the relevant source page.
+Test Case 4 — Conceptual question
+What is the conduction band?
 
-## ⚠️ Limitations
+Expected behavior:
 
-* The quality of answers depends on the quality and structure of the uploaded document.
-* Scanned PDFs may require OCR for reliable text extraction.
-* Very large documents may require additional optimization.
-* Retrieval quality depends on chunking, embedding, and similarity-search parameters.
-* The system is designed to answer based on the uploaded document and should not be treated as an independent source of defence intelligence.
-* API-based models introduce external service and API dependency.
+Retrieve the relevant document passage.
+Generate an answer based on the document.
+Display the relevant source page.
+Test Case 5 — Out-of-document question
+What is a pizza recipe?
 
----
+Expected behavior:
 
-## 🔮 Future Improvements
+The system should not use general knowledge to answer an unrelated question.
 
-Potential improvements include:
+If the document does not contain the requested information, the system should indicate that the answer is not available in the uploaded document.
 
-* 📚 Support for multiple documents
-* 🔎 Improved semantic search
-* 📊 Document comparison
-* 🖼️ OCR support for scanned documents
-* 🧠 Local/open-source language models
-* 💾 Persistent conversation history
-* 🔗 Improved source highlighting
-* 🛡️ More advanced hallucination/grounding detection
-* ⚡ Retrieval and processing optimizations
+⚠️ Current Limitations
+PDF Extraction
 
----
+The current pipeline primarily relies on text extraction from PDFs.
 
-## 📌 Challenge Requirements
+Image-only or heavily scanned PDFs may not provide useful extracted text.
 
-ASTRA INTEL was developed as a solution for the **ASTRA 3-Day Build Challenge 2026–27**.
+Retrieval
 
-The project focuses on the required document upload, processing, summarization, grounded question answering, and source/page attribution functionality specified in the challenge.
+The current retrieval system uses in-memory embeddings and NumPy cosine similarity rather than a dedicated persistent vector database.
 
-The challenge emphasizes a working product, reliability, testing, documentation, and the ability to explain technical decisions rather than simply producing a large amount of code.
+Session Persistence
 
----
+Conversation history and document indexing are maintained during the current application session rather than being stored in a persistent database.
 
-## 👨‍💻 Author
+Document Scope
 
-**Abhinav Om**
+The current interface is primarily designed around processing an uploaded PDF document.
 
-B.Tech CSE
+Retrieval Accuracy
+
+Semantic similarity and keyword matching can sometimes retrieve related passages that do not directly contain the exact answer.
+
+The system therefore relies on grounded prompting and evidence inspection to reduce unsupported responses.
+
+🔮 Future Improvements
+
+Potential future improvements include:
+
+OCR support for scanned documents
+Multiple document upload
+Cross-document comparison
+Persistent conversation history
+Persistent vector database
+Improved citation precision
+Hallucination detection
+Better retrieval reranking
+Local embedding models
+More advanced document parsing
+Support for additional document formats
+🤖 AI Usage Disclosure
+
+AI tools were used during the development of ASTRA INTEL.
+
+AI assistance was used for:
+
+Exploring implementation approaches
+Generating and refining portions of code
+Debugging development issues
+Improving the user interface
+Reviewing implementation ideas
+Iterating on prompts
+Improving retrieval behavior
+
+The generated code and suggestions were reviewed, modified, tested, and validated during development.
+
+The final implementation was tested against document-based questions to verify the retrieval and grounding pipeline.
+
+🧩 Design Philosophy
+
+ASTRA INTEL was developed with the following priority:
+
+Core Functionality
+       ↓
+Reliability
+       ↓
+Testing
+       ↓
+Documentation
+       ↓
+Advanced Features
+
+The main focus was to build a working document intelligence pipeline rather than adding unnecessary complexity.
+
+The engineering focus is the complete path from document ingestion to evidence retrieval and grounded answer generation.
+
+🏗️ Architecture
+
+The main components of ASTRA INTEL are:
+
+1. Document Processing
+
+PyMuPDF extracts text from the uploaded PDF.
+
+2. Chunking
+
+The extracted text is divided into overlapping chunks of approximately 250 words with a 60-word overlap.
+
+3. Embedding Generation
+
+Gemini's embedding model converts the document chunks and user queries into vector representations.
+
+4. Hybrid Retrieval
+
+The system combines semantic similarity and keyword matching to identify relevant chunks.
+
+5. Context Construction
+
+The highest-ranked chunks are provided to Gemini as document context.
+
+6. Grounded Generation
+
+Gemini generates the final response using the retrieved document context.
+
+7. Source Display
+
+The application displays the pages associated with the retrieved evidence.
+
+🌐 Deployment
+
+The application is designed to run as a Streamlit application.
+
+For deployment, the Gemini API key should be configured using the hosting platform's secret-management system rather than committing the key to the repository.
+
+👨‍💻 Author
+
+Abhinav Om
+
+B.Tech Computer Science & Engineering
+
 BMS Institute of Technology & Management
 
-GitHub: `https://github.com/abhi-om16`
+GitHub:
 
----
+https://github.com/abhi-om16
 
-## 📄 License
+🛡️ ASTRA INTEL
 
-This project is developed as part of an academic/student technical build challenge.
+Ask your documents. Get grounded answers.
+
