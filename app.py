@@ -50,37 +50,11 @@ client = genai.Client(
 # ============================================================
 
 def generate_with_retry(prompt):
-
-    for attempt in range(3):
-
-        try:
-
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=prompt
-            )
-
-            return response.text
-
-        except Exception as e:
-
-            error_text = str(e)
-
-            if "503" in error_text and attempt < 2:
-
-                delay = 5 * (2 ** attempt)
-
-                st.info(
-                    f"Gemini is temporarily busy. "
-                    f"Retrying in {delay} seconds..."
-                )
-
-                time.sleep(delay)
-
-            else:
-
-                raise e
-
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt
+    )
+    return response.text
 
 # ============================================================
 # TEXT NORMALIZATION — UNCHANGED
