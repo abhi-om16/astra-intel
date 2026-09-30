@@ -1,5 +1,5 @@
 # 🛡️ ASTRA INTEL
-
+[![🚀 Live Demo](https://img.shields.io/badge/🚀_Live_Demo-ASTRA_INTEL-blue?style=for-the-badge)](https://astra-intel-hyfjmqlm2n2qdtme9yozft.streamlit.app/)
 ### Document Intelligence • Hybrid Retrieval • Grounded Q&A
 
 ASTRA INTEL is a document intelligence application that allows users to upload a PDF, process its contents, and ask questions about the document.
